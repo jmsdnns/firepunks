@@ -4,3 +4,4 @@ jupyter
 torch
 torchvision
 matplotlib
+flake8
