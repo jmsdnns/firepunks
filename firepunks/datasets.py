@@ -2,15 +2,13 @@ import json
 
 import numpy as np
 import pandas as pd
-import matplotlib.image as mpimg
 from torch.utils.data import Dataset
+
+from . import images as IMGS
 
 
 PUNK_LABELS = 'data/punks.json'
-TRAIN_LABELS = 'data/train.json'
-TEST_LABELS = 'data/test.json'
-IMG_DIR = 'data/images'
-
+DF_IMG_COL = 'img'
 
 ALL_FILTERS = [
     '3DGlasses', 'alien', 'ape', 'bandana', 'beanie', 'bigBeard', 'bigShades',
@@ -34,25 +32,7 @@ ALL_FILTERS = [
 ]
 
 
-def load_image(id, img_dir=IMG_DIR):
-    return mpimg.imread(f'{img_dir}/punk{"%04d" % id}.png')
-
-
-def write_image(img_data, filepath):
-    return mpimg.imsave(filepath, img_data)
-
-
-def make_punks_df(labels_file):
-    with open(labels_file) as f:
-        punks = json.loads(f.read())
-    df = pd.DataFrame.from_dict(punks, orient='index')
-
-    df['img'] = df.apply(lambda row: [load_image(int(row.name))], axis=1)
-
-    return df
-
-
-def df_split(df, test_size=0):
+def split_df(df, test_size=0):
     df_size = len(df)
     df_indices = list(range(df_size))
     np.random.shuffle(df_indices)
@@ -63,19 +43,33 @@ def df_split(df, test_size=0):
     return a_idx, b_idx
 
 
-class PunksDataset(Dataset):
+def load_labels_df(self, labels_path):
+    with open(labels_path) as f:
+        punks = json.loads(f.read())
+    df = pd.DataFrame.from_dict(punks, orient='index')
+
+    def load_img(row):
+        return [IMGS.load_mpimg(int(row.name))]
+
+    df[DF_IMG_COL] = df.apply(load_img, axis=1)
+
+    return df
+
+
+class CPunksDataset(Dataset):
     def __init__(
-            self, filter, test_size=0, img_dir=IMG_DIR, labels_path=PUNK_LABELS
+            self, labels, test_size=0, img_dir=IMGS.IMG_DIR,
+            labels_path=PUNK_LABELS
     ):
-        self.filter = filter
+        self.labels = labels
         self.img_dir = img_dir
         self.labels_path = labels_path
 
-        punks_df = make_punks_df(self.labels_path)
-        self.train_idx, self.test_idx = df_split(punks_df, test_size)
+        punks_df = load_labels_df(self.labels_path)
+        self.train_idx, self.test_idx = split_df(punks_df, test_size)
 
-        self.X = np.array([row[0] for row in punks_df['img'].to_numpy()])
-        self.Y = punks_df[filter].to_numpy()
+        self.X = np.array([row[0] for row in punks_df[DF_IMG_COL].to_numpy()])
+        self.Y = punks_df[labels].to_numpy()
 
     def __len__(self):
         return len(self.Y)
