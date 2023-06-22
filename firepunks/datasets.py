@@ -100,7 +100,7 @@ def split_df(df, test_size=0):
     return a_idx, b_idx
 
 
-def load_labels_df(labels_path):
+def load_labels_df(self, labels_path):
     """
     Loads the labels from punks.json and every image into a pandas dataframe.
 
