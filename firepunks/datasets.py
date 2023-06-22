@@ -1,7 +1,6 @@
 import json
 
 import numpy as np
-import pandas as pd
 from torch.utils.data import Dataset
 
 from . import images as IMGS
@@ -10,7 +9,7 @@ from . import images as IMGS
 PUNK_LABELS = 'data/punks.json'
 DF_IMG_COL = 'img'
 
-ALL_FILTERS = [
+ALL_LABELS = [
     '3DGlasses', 'alien', 'ape', 'bandana', 'beanie', 'bigBeard', 'bigShades',
     'blackLipstick', 'blondeBob', 'blondeShort', 'blueEyeShadow', 'buckTeeth',
     'cap', 'capForward', 'chinstrap', 'choker', 'cigarette', 'classicShades',
@@ -32,7 +31,65 @@ ALL_FILTERS = [
 ]
 
 
+def split_labels(data, test_size=0):
+    """
+    Splits a list of data into two randomized sets of indexes.
+    """
+    data_indices = list(range(len(data)))
+    np.random.shuffle(data_indices)
+
+    a_idx = data_indices[test_size:]
+    b_idx = data_indices[:test_size]
+
+    return a_idx, b_idx
+
+
+def filter_labels(all_labels, query):
+    """
+    Walks across a dict of labels data, eg how punks.json is stored, to create
+    a list of a dicts that only contain the keys in list `query`.
+    """
+    return [{k: l.get(k) for k in query} for _, l in all_labels.items()]
+
+
+class FirePunksDataset(Dataset):
+    """
+    Implements a pytorch Dataset for iterating across PIL image / label pairs.
+
+    The images are converted from RGBA, as stored on disk, to RGB for ease of
+    use with pytorch.
+    """
+    def __init__(
+            self, labels, test_size=0, labels_path=PUNK_LABELS,
+            img_dir=IMGS.IMG_DIR, transform=lambda x: x
+    ):
+        self.labels = labels
+        self.labels_path = labels_path
+        self.img_dir = img_dir
+
+        punks_data = json.loads(open(self.labels_path).read())
+        split_idx = split_labels(punks_data, test_size)
+        self.train_idx, self.test_idx = split_idx
+
+        self.X = [transform(IMGS.load_image(idx))
+                  for idx in range(len(punks_data))]
+
+        self.Y = self._filter_labels(punks_data, labels)
+
+    def __len__(self):
+        return len(self.Y)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.Y[idx]
+
+
 def split_df(df, test_size=0):
+    """
+    Splits the row indexes of a dataframe into two randomized sets of indexes.
+
+    This function is here for legacy purposes as part of converting cpunks to
+    pytorch.
+    """
     df_size = len(df)
     df_indices = list(range(df_size))
     np.random.shuffle(df_indices)
@@ -44,6 +101,15 @@ def split_df(df, test_size=0):
 
 
 def load_labels_df(self, labels_path):
+    """
+    Loads the labels from punks.json and every image into a pandas dataframe.
+
+    This function is here for legacy purposes as part of converting cpunks to
+    pytorch.
+    """
+
+    import pandas as pd
+
     with open(labels_path) as f:
         punks = json.loads(f.read())
     df = pd.DataFrame.from_dict(punks, orient='index')
@@ -57,6 +123,13 @@ def load_labels_df(self, labels_path):
 
 
 class CPunksDataset(Dataset):
+    """
+    Implements a pytorch Dataset for iterating across the cpunks dataframe
+    format.
+
+    This function is here for legacy purposes as part of converting cpunks to
+    pytorch.
+    """
     def __init__(
             self, labels, test_size=0, img_dir=IMGS.IMG_DIR,
             labels_path=PUNK_LABELS
