@@ -52,6 +52,14 @@ def filter_labels(all_labels, query):
     return [{k: l.get(k) for k in query} for _, l in all_labels.items()]
 
 
+def load_labels(labels_path=PUNK_LABELS):
+    """
+    Loads labels from json.
+    """
+    json_data = open(labels_path).read()
+    return json.loads(json_data)
+
+
 class FirePunksDataset(Dataset):
     """
     Implements a pytorch Dataset for iterating across PIL image / label pairs.
