@@ -66,15 +66,16 @@ class FirePunksDataset(Dataset):
         self.labels = labels
         self.labels_path = labels_path
         self.img_dir = img_dir
+        self.test_size = test_size
 
-        punks_data = json.loads(open(self.labels_path).read())
-        split_idx = split_labels(punks_data, test_size)
+        punks_data = load_labels(self.labels_path)
+        split_idx = split_labels(punks_data, self.test_size)
         self.train_idx, self.test_idx = split_idx
 
         self.X = [transform(IMGS.load_image(idx))
                   for idx in range(len(punks_data))]
 
-        self.Y = self._filter_labels(punks_data, labels)
+        self.Y = filter_labels(punks_data, labels)
 
     def __len__(self):
         return len(self.Y)
@@ -100,7 +101,7 @@ def split_df(df, test_size=0):
     return a_idx, b_idx
 
 
-def load_labels_df(labels_path):
+def load_labels_df(labels_path=PUNK_LABELS):
     """
     Loads the labels from punks.json and every image into a pandas dataframe.
 
@@ -137,9 +138,10 @@ class CPunksDataset(Dataset):
         self.labels = labels
         self.img_dir = img_dir
         self.labels_path = labels_path
+        self.test_size = test_size
 
         punks_df = load_labels_df(self.labels_path)
-        self.train_idx, self.test_idx = split_df(punks_df, test_size)
+        self.train_idx, self.test_idx = split_df(punks_df, self.test_size)
 
         self.X = np.array([row[0] for row in punks_df[DF_IMG_COL].to_numpy()])
         self.Y = punks_df[labels].to_numpy()
