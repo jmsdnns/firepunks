@@ -38,7 +38,7 @@ def write_image(img_data, filepath):
 def load_mpimg(id, img_dir=IMG_DIR):
     """
     Loads an image using the legacy matplotlib imread function.
-    
+
     Matplotlib wants people to use PIL instead, so this is here for
     compatibility with cpunks.
     """
@@ -49,7 +49,7 @@ def load_mpimg(id, img_dir=IMG_DIR):
 def write_mpimg(img_data, filepath):
     """
     Writes an image using the legacy matplotlib imsave function.
-    
+
     Matplotlib wants people to use PIL instead, so this is here for
     compatibility with cpunks.
     """
